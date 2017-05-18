@@ -35,3 +35,18 @@ void SelectParams(NetworkType network)
     g_pCurrentParams = &Params(network);
 }
 
+// 明示的な参照により無理やりグローバル変数のインスタンス化を行わせる.
+// これをやらないと特定のグローバル変数が未使用とみなされて最適化か何かの理由で存在が抹消されるっぽい.
+// つまりコンストラクタが呼ばれない.
+// 本当はこういうの書きたくないんだけど….
+class CMainParams;
+extern CMainParams g_mainParams;
+auto p1 = &g_mainParams;
+
+class CTestNetParams;
+extern CTestNetParams g_testNetParams;
+auto p2 = &g_testNetParams;
+
+class CRegTestParams;
+extern CRegTestParams g_regTestParams;
+auto p3 = &g_regTestParams;

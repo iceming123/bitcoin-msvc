@@ -95,4 +95,4 @@ public:
         };
     }
 };
-static CTestNetParams g_testNetParams;
+CTestNetParams g_testNetParams;
