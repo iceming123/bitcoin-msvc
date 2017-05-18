@@ -9,26 +9,10 @@
 
 static CChainParams* g_pCurrentParams = 0;
 
-void CChainParams::Initialize()
-{
-    // 重複除外.
-    static int flag = 0;
-    if (flag)return;
-    flag = 1;
-
-    // インスタンス明示初期化.
-    void Init1();
-    void Init2();
-    void Init3();
-    Init1();
-    Init2();
-    Init3();
-}
-
 CChainParams::CChainParams(NetworkType networkType)
 {
     m_networkType = networkType;
-    CChainParamsUtil::RegisterParamsOfNetworkType(m_networkType, this);
+    CChainParamsPool::Instance()->RegisterParamsOfNetworkType(m_networkType, this);
 }
 
 const CChainParams &Params() {
@@ -38,7 +22,7 @@ const CChainParams &Params() {
 
 CChainParams& Params(NetworkType chain)
 {
-    CChainParams* p = CChainParamsUtil::GetParamsOfNetworkType(chain);
+    CChainParams* p = CChainParamsPool::Instance()->GetParamsOfNetworkType(chain);
     if (!p) {
         throw std::runtime_error(strprintf("%s: Unknown chain %s.", __func__, chain));
     }
@@ -47,7 +31,6 @@ CChainParams& Params(NetworkType chain)
 
 void SelectParams(NetworkType network)
 {
-    CChainParams::Initialize();
     SelectBaseParams(network);
     g_pCurrentParams = &Params(network);
 }

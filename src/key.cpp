@@ -330,8 +330,6 @@ void ECC_Start() {
     }
 
     secp256k1_context_sign = ctx;
-
-    CChainParams::Initialize(); // 仮.
 }
 
 void ECC_Stop() {

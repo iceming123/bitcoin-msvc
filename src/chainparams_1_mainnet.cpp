@@ -120,9 +120,6 @@ public:
         };
     }
 };
-CMainParams* g_mainParams;
-
-void Init1() {
-    g_mainParams = new CMainParams();
-}
-
+#pragma optimize("", off)
+CMainParams g_mainParams;
+#pragma optimize("", on)

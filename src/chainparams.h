@@ -52,9 +52,6 @@ struct ChainTxData {
 class CChainParams
 {
 public:
-    static void Initialize();
-
-public:
     enum Base58Type {
         PUBKEY_ADDRESS, // 公開鍵アドレス.
         SCRIPT_ADDRESS, // スクリプトアドレス.

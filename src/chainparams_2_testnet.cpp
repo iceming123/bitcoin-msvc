@@ -95,9 +95,4 @@ public:
         };
     }
 };
-CTestNetParams* g_testNetParams;
-
-void Init2() {
-    g_testNetParams = new CTestNetParams();
-}
-
+static CTestNetParams g_testNetParams;
