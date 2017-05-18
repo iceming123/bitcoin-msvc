@@ -120,6 +120,5 @@ public:
         };
     }
 };
-#pragma optimize("", off)
+
 CMainParams g_mainParams;
-#pragma optimize("", on)
