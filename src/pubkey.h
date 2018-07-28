@@ -33,10 +33,10 @@ public:
     /**
      * secp256k1:
      */
-    static constexpr unsigned int PUBLIC_KEY_SIZE             = 65;
-    static constexpr unsigned int COMPRESSED_PUBLIC_KEY_SIZE  = 33;
-    static constexpr unsigned int SIGNATURE_SIZE              = 72;
-    static constexpr unsigned int COMPACT_SIGNATURE_SIZE      = 65;
+    static constexpr unsigned int PUBLIC_KEY_SIZE = 65;
+    static constexpr unsigned int COMPRESSED_PUBLIC_KEY_SIZE = 33;
+    static constexpr unsigned int SIGNATURE_SIZE = 72;
+    static constexpr unsigned int COMPACT_SIGNATURE_SIZE = 65;
     /**
      * see www.keylength.com
      * script supports up to 75 for single byte push
@@ -46,7 +46,6 @@ public:
         "COMPRESSED_PUBLIC_KEY_SIZE is larger than PUBLIC_KEY_SIZE");
 
 private:
-
     /**
      * Just store the serialized data.
      * Its length can very cheaply be computed from the first byte.
@@ -66,13 +65,13 @@ private:
     //! Set this key data to be invalid
     void Invalidate()
     {
-        m_vch[0] = 0xFF;
+        vch[0] = 0xFF;
     }
 
 public:
-
-    bool static ValidSize(const std::vector<unsigned char> &vch) {
-      return vch.size() > 0 && GetLen(vch[0]) == vch.size();
+    bool static ValidSize(const std::vector<unsigned char>& vch)
+    {
+        return vch.size() > 0 && GetLen(vch[0]) == vch.size();
     }
 
     //! Construct an invalid public key.
@@ -87,7 +86,7 @@ public:
     {
         int len = pend == pbegin ? 0 : GetLen(pbegin[0]);
         if (len && len == (pend - pbegin))
-            memcpy(m_vch, (unsigned char*)&pbegin[0], len);
+            memcpy(vch, (unsigned char*)&pbegin[0], len);
         else
             Invalidate();
     }
@@ -115,8 +114,8 @@ public:
     //! Comparator implementation.
     friend bool operator==(const CPubKey& a, const CPubKey& b)
     {
-        return a.m_vch[0] == b.m_vch[0] &&
-               memcmp(a.m_vch, b.m_vch, a.size()) == 0;
+        return a.vch[0] == b.vch[0] &&
+               memcmp(a.vch, b.vch, a.size()) == 0;
     }
     friend bool operator!=(const CPubKey& a, const CPubKey& b)
     {
@@ -124,8 +123,8 @@ public:
     }
     friend bool operator<(const CPubKey& a, const CPubKey& b)
     {
-        return a.m_vch[0] < b.m_vch[0] ||
-               (a.m_vch[0] == b.m_vch[0] && memcmp(a.m_vch, b.m_vch, a.size()) < 0);
+        return a.vch[0] < b.vch[0] ||
+               (a.vch[0] == b.vch[0] && memcmp(a.vch, b.vch, a.size()) < 0);
     }
 
     //! Implement serialization, as if this was a byte vector.
@@ -134,7 +133,7 @@ public:
     {
         unsigned int len = size();
         ::WriteCompactSize(s, len);
-        s.write((char*)m_vch, len);
+        s.write((char*)vch, len);
     }
     template <typename Stream>
     void Unserialize(Stream& s)
@@ -154,13 +153,13 @@ public:
     //! Get the KeyID of this public key (hash of its serialization)
     CKeyID GetID() const
     {
-        return CKeyID(Hash160(m_vch, m_vch + size()));
+        return CKeyID(Hash160(vch, vch + size()));
     }
 
     //! Get the 256-bit hash of this public key.
-    uint256 GetPublicKeyHash() const
+    uint256 GetHash() const
     {
-        return Hash(m_vch, m_vch + size());
+        return Hash(vch, vch + size());
     }
 
     /*
@@ -200,7 +199,7 @@ public:
     bool Decompress();
 
     //! Derive BIP32 child pubkey.
-    bool Derive(CPubKey& pubkeyChild, ChainCode &ccChild, unsigned int nChild, const ChainCode& cc) const;
+    bool Derive(CPubKey& pubkeyChild, ChainCode& ccChild, unsigned int nChild, const ChainCode& cc) const;
 };
 
 /** Users of this module must hold an ECCVerifyHandle. The constructor and

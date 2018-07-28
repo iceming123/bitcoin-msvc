@@ -6,21 +6,23 @@
 #ifndef BITCOIN_UINT256_H
 #define BITCOIN_UINT256_H
 
+#include "base_uint.h"
 #include <assert.h>
+#include <crypto/common.h>
 #include <cstring>
 #include <stdexcept>
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include <crypto/common.h>
 
 /** Template base class for fixed-sized opaque blobs. */
-template<unsigned int BITS>
+template <unsigned int BITS>
 class base_blob
 {
 protected:
     static constexpr int WIDTH = BITS / 8;
     uint8_t data[WIDTH];
+
 public:
     base_blob()
     {
@@ -81,25 +83,40 @@ public:
     uint64_t GetUint64(int pos) const
     {
         const uint8_t* ptr = data + pos * 8;
-        return ((uint64_t)ptr[0]) | \
-               ((uint64_t)ptr[1]) << 8 | \
-               ((uint64_t)ptr[2]) << 16 | \
-               ((uint64_t)ptr[3]) << 24 | \
-               ((uint64_t)ptr[4]) << 32 | \
-               ((uint64_t)ptr[5]) << 40 | \
-               ((uint64_t)ptr[6]) << 48 | \
+        return ((uint64_t)ptr[0]) |
+               ((uint64_t)ptr[1]) << 8 |
+               ((uint64_t)ptr[2]) << 16 |
+               ((uint64_t)ptr[3]) << 24 |
+               ((uint64_t)ptr[4]) << 32 |
+               ((uint64_t)ptr[5]) << 40 |
+               ((uint64_t)ptr[6]) << 48 |
                ((uint64_t)ptr[7]) << 56;
     }
 
+    template <typename Stream>
+    void Serialize(Stream& s) const
+    {
+        s.write((char*)data, sizeof(data));
+    }
+
+    template <typename Stream>
+    void Unserialize(Stream& s)
+    {
+        s.read((char*)data, sizeof(data));
+    }
+};
+
 /** 160-bit unsigned big integer. */
-class uint160 : public base_uint<160> {
+class uint160 : public base_blob<160>
+{
 public:
     uint160() {}
     explicit uint160(const std::vector<unsigned char>& vch) : base_blob<160>(vch) {}
 };
 
 /** 256-bit unsigned big integer. */
-class uint256 : public base_uint<256> {
+class uint256 : public base_blob<256>
+{
 public:
     uint256() {}
     explicit uint256(const std::vector<unsigned char>& vch) : base_blob<256>(vch) {}
@@ -111,20 +128,22 @@ public:
      */
     uint64_t GetCheapHash() const
     {
-        return ReadLE64(reinterpret_cast<const unsigned char*>(pn));
+        return ReadLE64(data);
     }
 };
 
 // alias
+/*
 typedef uint256 arith_uint256;
 inline uint256 UintToArith256(const uint256& u) { return u; }
 inline uint256 ArithToUint256(const uint256& u) { return u; }
+*/
 
 /* uint256 from const char *.
  * This is a separate function because the constructor uint256(const char*) can result
  * in dangerously catching uint256(0).
  */
-inline uint256 uint256S(const char *str)
+inline uint256 uint256S(const char* str)
 {
     uint256 rv;
     rv.SetHex(str);

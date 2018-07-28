@@ -12,23 +12,26 @@
 #include <string>
 #include <vector>
 
-class uint_error : public std::runtime_error {
+class uint256;
+
+class uint_error : public std::runtime_error
+{
 public:
     explicit uint_error(const std::string& str) : std::runtime_error(str) {}
 };
 
 /** Template base class for unsigned big integers. */
-template<unsigned int BITS>
+template <unsigned int BITS>
 class base_uint
 {
 protected:
     static constexpr int WIDTH = BITS / 32;
     uint32_t pn[WIDTH];
-public:
 
+public:
     base_uint()
     {
-        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+        static_assert(BITS / 32 > 0 && BITS % 32 == 0, "Template parameter BITS must be a positive multiple of 32.");
 
         for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
@@ -36,28 +39,26 @@ public:
 
     base_uint(const base_uint& b)
     {
-        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+        static_assert(BITS / 32 > 0 && BITS % 32 == 0, "Template parameter BITS must be a positive multiple of 32.");
 
         for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
     }
 
-    explicit base_uint(const std::vector<unsigned char>& vch);
-
     base_uint& operator=(const base_uint& b)
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
         return *this;
     }
 
     base_uint(uint64_t b)
     {
-        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+        static_assert(BITS / 32 > 0 && BITS % 32 == 0, "Template parameter BITS must be a positive multiple of 32.");
 
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
-        for (int i = 2; i < PN_WIDTH; i++)
+        for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
     }
 
@@ -66,7 +67,7 @@ public:
     const base_uint operator~() const
     {
         base_uint ret;
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             ret.pn[i] = ~pn[i];
         return ret;
     }
@@ -74,7 +75,7 @@ public:
     const base_uint operator-() const
     {
         base_uint ret;
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             ret.pn[i] = ~pn[i];
         ++ret;
         return ret;
@@ -86,28 +87,28 @@ public:
     {
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
-        for (int i = 2; i < PN_WIDTH; i++)
+        for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
         return *this;
     }
 
     base_uint& operator^=(const base_uint& b)
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             pn[i] ^= b.pn[i];
         return *this;
     }
 
     base_uint& operator&=(const base_uint& b)
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             pn[i] &= b.pn[i];
         return *this;
     }
 
     base_uint& operator|=(const base_uint& b)
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        for (int i = 0; i < WIDTH; i++)
             pn[i] |= b.pn[i];
         return *this;
     }
@@ -132,8 +133,7 @@ public:
     base_uint& operator+=(const base_uint& b)
     {
         uint64_t carry = 0;
-        for (int i = 0; i < PN_WIDTH; i++)
-        {
+        for (int i = 0; i < WIDTH; i++) {
             uint64_t n = carry + pn[i] + b.pn[i];
             pn[i] = n & 0xffffffff;
             carry = n >> 32;
@@ -211,7 +211,7 @@ public:
     friend inline const base_uint operator|(const base_uint& a, const base_uint& b) { return base_uint(a) |= b; }
     friend inline const base_uint operator&(const base_uint& a, const base_uint& b) { return base_uint(a) &= b; }
     friend inline const base_uint operator^(const base_uint& a, const base_uint& b) { return base_uint(a) ^= b; }
-    friend inline const base_uint operator >> (const base_uint& a, int shift) { return base_uint(a) >>= shift; }
+    friend inline const base_uint operator>>(const base_uint& a, int shift) { return base_uint(a) >>= shift; }
     friend inline const base_uint operator<<(const base_uint& a, int shift) { return base_uint(a) <<= shift; }
     friend inline const base_uint operator*(const base_uint& a, uint32_t b) { return base_uint(a) *= b; }
     friend inline bool operator==(const base_uint& a, const base_uint& b) { return memcmp(a.pn, b.pn, sizeof(a.pn)) == 0; }
@@ -225,9 +225,8 @@ public:
 
     std::string GetHex() const;
     void SetHex(const char* psz);
-    void SetHex(const std::string& str){ SetHex(str.c_str()); }
-    std::string ToHexString() const { return GetHex(); }
-    std::string ToString() const { return ToHexString(); }
+    void SetHex(const std::string& str);
+    std::string ToString() const;
 
     unsigned int size() const
     {
@@ -235,92 +234,14 @@ public:
     }
 
     /**
-    * Returns the position of the highest bit set plus one, or zero if the
-    * value is zero.
-    */
+     * Returns the position of the highest bit set plus one, or zero if the
+     * value is zero.
+     */
     unsigned int bits() const;
 
     uint64_t GetLow64() const
     {
         static_assert(WIDTH >= 2, "Assertion WIDTH >= 2 failed (WIDTH = BITS / 32). BITS is a template parameter.");
         return pn[0] | (uint64_t)pn[1] << 32;
-    }
-
-    // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
-    // base_blob
-    // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- //
-    bool IsNull() const
-    {
-        for (int i = 0; i < PN_WIDTH; i++)
-            if (pn[i] != 0)
-                return false;
-        return true;
-    }
-
-    /**
-     * The "compact" format is a representation of a whole
-     * number N using an unsigned 32bit number similar to a
-     * floating point format.
-     * The most significant 8 bits are the unsigned exponent of base 256.
-     * This exponent can be thought of as "number of bytes of N".
-     * The lower 23 bits are the mantissa.
-     * Bit number 24 (0x800000) represents the sign of N.
-     * N = (-1^sign) * mantissa * 256^(exponent-3)
-     *
-     * Satoshi's original implementation used BN_bn2mpi() and BN_mpi2bn().
-     * MPI uses the most significant bit of the first byte as sign.
-     * Thus 0x1234560000 is compact (0x05123456)
-     * and  0xc0de000000 is compact (0x0600c0de)
-     *
-     * Bitcoin only uses this "compact" format for encoding difficulty
-     * targets, which are unsigned 256bit quantities.  Thus, all the
-     * complexities of the sign bit and using base 256 are probably an
-     * implementation accident.
-     */
-    arith_uint256& SetCompact(uint32_t nCompact, bool *pfNegative = nullptr, bool *pfOverflow = nullptr);
-    uint32_t GetCompact(bool fNegative = false) const;
-
-    friend uint256 ArithToUint256(const arith_uint256 &);
-    friend arith_uint256 UintToArith256(const uint256 &);
-};
-
-    unsigned char* end()
-    {
-        return begin() + BYTE_WIDTH;
-    }
-
-    const unsigned char* begin() const
-    {
-        return reinterpret_cast<const unsigned char*>(&pn[0]);
-    }
-
-    const unsigned char* end() const
-    {
-        return begin() + BYTE_WIDTH;
-    }
-
-    uint64_t GetUint64(int pos) const
-    {
-        const uint8_t* ptr = begin() + pos * 8;
-        return ((uint64_t)ptr[0]) | \
-            ((uint64_t)ptr[1]) << 8 | \
-            ((uint64_t)ptr[2]) << 16 | \
-            ((uint64_t)ptr[3]) << 24 | \
-            ((uint64_t)ptr[4]) << 32 | \
-            ((uint64_t)ptr[5]) << 40 | \
-            ((uint64_t)ptr[6]) << 48 | \
-            ((uint64_t)ptr[7]) << 56;
-    }
-
-    template<typename Stream>
-    void Serialize(Stream& s) const
-    {
-        s.write((const char*)pn, sizeof(pn));
-    }
-
-    template<typename Stream>
-    void Unserialize(Stream& s)
-    {
-        s.read((char*)pn, sizeof(pn));
     }
 };

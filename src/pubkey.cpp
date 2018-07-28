@@ -8,11 +8,11 @@
 #include <secp256k1.h>
 #include <secp256k1_recovery.h>
 
-base58string CKeyID::GetBase58addressWithNetworkPubkeyPrefix() const
-{
-/* Global secp256k1_context object used for verification. */
-secp256k1_context* secp256k1_context_verify = nullptr;
-} // namespace
+// base58string CKeyID::GetBase58addressWithNetworkPubkeyPrefix() const
+// {
+// /* Global secp256k1_context object used for verification. */
+// secp256k1_context* secp256k1_context_verify = nullptr;
+// } // namespace
 
 /** This function is taken from the libsecp256k1 distribution and implements
  *  DER parsing for ECDSA signatures, while supporting an arbitrary subset of
