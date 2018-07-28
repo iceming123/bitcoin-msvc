@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2009-2017 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,22 +22,23 @@ template<unsigned int BITS>
 class base_uint
 {
 protected:
-    enum {
-        PN_WIDTH = BITS / 32,
-        BYTE_WIDTH = BITS / 8
-    };
-    uint32_t pn[PN_WIDTH];
+    static constexpr int WIDTH = BITS / 32;
+    uint32_t pn[WIDTH];
 public:
 
     base_uint()
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+
+        for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
     }
 
     base_uint(const base_uint& b)
     {
-        for (int i = 0; i < PN_WIDTH; i++)
+        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+
+        for (int i = 0; i < WIDTH; i++)
             pn[i] = b.pn[i];
     }
 
@@ -52,6 +53,8 @@ public:
 
     base_uint(uint64_t b)
     {
+        static_assert(BITS/32 > 0 && BITS%32 == 0, "Template parameter BITS must be a positive multiple of 32.");
+
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
         for (int i = 2; i < PN_WIDTH; i++)
@@ -59,14 +62,6 @@ public:
     }
 
     explicit base_uint(const std::string& str);
-
-    bool operator!() const
-    {
-        for (int i = 0; i < PN_WIDTH; i++)
-            if (pn[i] != 0)
-                return false;
-        return true;
-    }
 
     const base_uint operator~() const
     {
@@ -81,7 +76,7 @@ public:
         base_uint ret;
         for (int i = 0; i < PN_WIDTH; i++)
             ret.pn[i] = ~pn[i];
-        ret++;
+        ++ret;
         return ret;
     }
 
@@ -176,7 +171,7 @@ public:
     {
         // prefix operator
         int i = 0;
-        while (++pn[i] == 0 && i < PN_WIDTH - 1)
+        while (i < WIDTH && ++pn[i] == 0)
             i++;
         return *this;
     }
@@ -193,7 +188,7 @@ public:
     {
         // prefix operator
         int i = 0;
-        while (--pn[i] == (uint32_t)-1 && i < PN_WIDTH - 1)
+        while (i < WIDTH && --pn[i] == (uint32_t)-1)
             i++;
         return *this;
     }
@@ -247,7 +242,7 @@ public:
 
     uint64_t GetLow64() const
     {
-        assert(PN_WIDTH >= 2);
+        static_assert(WIDTH >= 2, "Assertion WIDTH >= 2 failed (WIDTH = BITS / 32). BITS is a template parameter.");
         return pn[0] | (uint64_t)pn[1] << 32;
     }
 
@@ -262,17 +257,32 @@ public:
         return true;
     }
 
-    void SetNull()
-    {
-        memset(pn, 0, sizeof(pn));
-    }
+    /**
+     * The "compact" format is a representation of a whole
+     * number N using an unsigned 32bit number similar to a
+     * floating point format.
+     * The most significant 8 bits are the unsigned exponent of base 256.
+     * This exponent can be thought of as "number of bytes of N".
+     * The lower 23 bits are the mantissa.
+     * Bit number 24 (0x800000) represents the sign of N.
+     * N = (-1^sign) * mantissa * 256^(exponent-3)
+     *
+     * Satoshi's original implementation used BN_bn2mpi() and BN_mpi2bn().
+     * MPI uses the most significant bit of the first byte as sign.
+     * Thus 0x1234560000 is compact (0x05123456)
+     * and  0xc0de000000 is compact (0x0600c0de)
+     *
+     * Bitcoin only uses this "compact" format for encoding difficulty
+     * targets, which are unsigned 256bit quantities.  Thus, all the
+     * complexities of the sign bit and using base 256 are probably an
+     * implementation accident.
+     */
+    arith_uint256& SetCompact(uint32_t nCompact, bool *pfNegative = nullptr, bool *pfOverflow = nullptr);
+    uint32_t GetCompact(bool fNegative = false) const;
 
-    inline int Compare(const base_uint& other) const { return memcmp(pn, other.pn, sizeof(pn)); }
-
-    unsigned char* begin()
-    {
-        return reinterpret_cast<unsigned char*>(&pn[0]);
-    }
+    friend uint256 ArithToUint256(const arith_uint256 &);
+    friend arith_uint256 UintToArith256(const uint256 &);
+};
 
     unsigned char* end()
     {
